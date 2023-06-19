@@ -1,0 +1,1152 @@
+---
+title: "EPI66 - Tópicos de Pesquisa I"
+subtitle: "Uso de DAGs para a identificação de confundidores na pesquisa em saúde"
+fontsize: 10pt
+author: |
+  | Ricardo de Souza Kuchenbecker
+  | Rodrigo Citton P. dos Reis - `citton.padilha@ufrgs.br`
+institute: |
+  | \textsc{Universidade Federal do Rio Grande do Sul}
+  | \textsc{Programa de Pós-Graduação em Epidemiologia}
+date: |
+  | Porto Alegre, 2023
+---
+
+# Introdução {.allowframebreaks}
+
+- Pesquisa epidemiológica e relações entre variáveis.
+- Modelos estatísticos.
+    - Propósitos dos modelos estatísticos: predição _versus_ explicação (exploratório, causalidade)\footnote{Breiman, L. Statistical modeling: the two cultures. \emph{Statistical Science}, 16:199-231, 2001.} $\color{black}{^{,}}$ \footnote{Shmueli, G. To explain or to predict. \emph{Statistical Science}, 25:289-310, 2010.}.
+    - Modelos estatísticos: o papel das variáveis, e a relação de dependência entre estas.
+- Na estatística, especificamos relações de dependência por meio de distribuições de probabilidades.
+
+## Introdução {.allowframebreaks}
+
+- __Grafos:__ na matemática e ciência da computação, grafos são usados para modelar objetos, representados por vértices (nós), e as suas relações, representadas por arestas.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, out.height="60%", fig.align='center'}
+
+library(spdep)
+library(sp)
+
+poa_bairro <- readRDS(file = here::here('dados', 'poa_prop3.rds'))
+
+coords <- sp::coordinates(poa_bairro)
+
+par(mar = c(0, 0, 0, 0))
+plot(poa_bairro)
+plot(poly2nb(poa_bairro, queen = FALSE), coords,
+     add = T, col = "steelblue", lwd = 2)
+
+```
+
+\framebreak
+
+- \structure{DAGs:} __grafos acíclicos dirigidos__ (_Directed acyclic graphs_)
+    + Diagramas causais;
+    + Modelos causais;
+    + Modelos gráficos;
+    + Modelos de equações estruturais não paramétricos;
+    + Modelos causais estruturais.
+
+# Preliminares
+
+## Como duas variáveis podem estar associadas na população? {.allowframebreaks}
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='40%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'associa1.png'))
+
+```
+
+- Duas variáveis $X$ e $Y$ serão \structure{associadas} na população se $X$ causa $Y$.
+
+\framebreak
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='40%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'associa2.png'))
+
+```
+
+- $X$ e $Y$ serão associadas na população se $Y$ causa $X$.
+
+\framebreak
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='40%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'associa3.png'))
+
+```
+
+- Por fim, $X$ e $Y$ serão associadas na população se existir alguma variável $Z$ que causa __ambas__ $X$ e $Y$.
+
+\framebreak
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'associa6.png'))
+
+```
+
+- $X$ e $Y$ não podem ser associadas na população por qualquer outra razão.
+- Se $X$ e $Y$ são associadas na população, então __pelo menos uma__ das situações acima deve ser verdade.
+
+## O que queremos dizer com associação "na população"?
+
+- Na terminologia estatística, $X$ e $Y$ são associadas "na população" significa que estas variáveis são \structure{marginalmente associadas}.
+- Se $X$ e $Y$ são marginalmente associadas, então, para um indivíduo em particular, saber a respeito de $X$ nos dá alguma informação sobre o valor provável de $Y$, e vice-versa.
+- Suponha, por simplicidade, $X$ e $Y$ dicotômicas. Se $X$ e $Y$ são marginalmente associadas, então
+
+$$
+\Pr( Y = 1 | X = 1 ) \neq \Pr( Y = 1 | X = 0 ),
+$$
+
+e
+
+$$
+\Pr( X = 1 | Y = 1 ) \neq \Pr( X = 1 | Y = 0 ).
+$$
+
+<!-- - A seguir, falaremos de __associação condicional__, ou associação em uma __subpopulação__. -->
+
+## Como duas variáveis podem estar associadas em uma subpopulação? {.allowframebreaks}
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='40%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'associa4.png'))
+
+```
+
+- Suponha que Z é um __efeito__ tanto de $X$ como de $Y$.
+- Então, $X$ e $Y$ serão __associadas dentro do estrato__ (subpopulação) de $Z$, mesmo se na população estas variáveis forem independentes.
+- $X$ e $Y$ serão \structure{condicionalmente associadas} (dado $Z$), mesmo que sejam marginalmente independentes (não associadas).
+- A caixa ao redor de $Z$ denota que estamos estratificando (condicionando) em $Z$.
+- A reta tracejada denota a __associação condicional induzida__ pela estratificação/codicionamento em $Z$.
+
+\framebreak
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='35%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'associa5.png'))
+
+```
+
+- Suponha que uma escola aceita alunos ou porque são "bons" nos __esportes__, ou porque são "bons" __academicamente__; ou ainda, alunos que são "bons" nos dois.
+- Suponha que a habilidade acadêmica e a habilidade no esporte sejam __independentes__ na população.
+    - Se selecionarmos ao acaso um aluno desta escola, e este nos informa que não possui habilidades esportivas, o que podemos dizer sobre suas habilidades acadêmicas?
+- __Dentro da escola__, existirá uma associação (negativa) entre habilidade acadêmica e habilidade nos esportes.
+
+## Resumindo
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='70%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'associa7.png'))
+
+```
+
+- $X$ e $Y$ serão __associadas na população__ se:
+    + $X$ causa $Y$.
+    + $Y$ causa $X$.
+    + existe uma $Z$ que é causa comum de $X$ e $Y$.
+- $X$ e $Y$ serão __associadas em subpopulações definadas por $Z$__ se $Z$ é um __efeito__ de $X$ e $Y$.
+
+## Uma avaliação empírica {.allowframebreaks}
+
+Suponha que conhecemos "por completo" a relação entre as variáveis $Y$, $X$ e $C$, dada pelas seguintes equações
+
+\begin{eqnarray*}
+X &=& C + \epsilon_X,\ \epsilon\sim N(0, \sigma_{\epsilon_X}), \\
+Y &=& 1.5X + 0.5C + \epsilon_Y,\ \epsilon\sim N(0, \sigma_{\epsilon_Y}).
+\end{eqnarray*}
+
+Ou seja, neste caso, temos que $X\rightarrow Y$ e $X\leftarrow C \rightarrow Y$ na população. Digamos que estamos interessados no efeito de $X$ em $Y$ (o qual sabemos que é $1.5$).
+
+\framebreak
+
+Suponha também que obtivemos uma amostra de tamanho $n = 1000$ da população.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="80%"}
+
+n <- 1000
+c <- rnorm(n)
+
+b0 <- 0
+b1 <- 1.5
+b2 <- 1
+b3 <- 0.5
+
+x <- b0 + b2 * c + rnorm(n, sd = 0.5)
+y <- b0 + b1 * x + b3 * c + rnorm(n, sd = 0.5)
+
+par(mfrow = c(1, 1))
+plot(y ~ x, pch = 16, col = "steelblue")
+
+```
+
+\framebreak
+
+Com os dados observados, ajustamos dois modelos de regressão linear para a variável $Y$:
+
+1. Modelo com apenas a variável $X$ ("não ajustado" para confundidores);
+2. Modelo com as variáveis $X$ e $C$ ("ajustado").
+
+Deveríamos observar um efeito viesado de $X$ em $Y$ no primeiro modelo, e um efeito não-viesado no segundo modelo.
+
+\framebreak
+
+\footnotesize
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+
+df <- data.frame(c, x, y)
+
+fit1 <- lm(y ~ x, data = df)
+#summary(fit1)
+fit2 <- lm(y ~ x + c, data = df)
+#summary(fit2)
+
+library(sjPlot)
+
+tab <- sjPlot::tab_model(fit1, fit2,
+                         string.pred = "Variáveis",
+                         show.r2 = FALSE
+                         )
+
+library(sjtable2df)
+
+tab_df <- sjtable2df::mtab2df(
+  mtab = tab,
+  n_models = 2,
+  output = "data.frame"
+)
+
+tab_df <- tab_df[-4,]
+
+library(knitr)
+library(kableExtra)
+
+kbl(tab_df,
+    format = "latex",
+    caption = "Ajuste por confundior",
+    digits = 4,
+    booktabs = T) %>% 
+  add_header_above(c(" ", "Não ajustado" = 3, "Ajustado" = 3)) %>% 
+  kable_styling(latex_options = c("scale_down"))
+
+```
+
+\normalsize
+
+\framebreak
+
+Agora suponha que a verdadeira relação entre as variáveis $Y$, $X$ e $Z$, é dada pelas seguintes equações
+
+\begin{eqnarray*}
+Y &=& 0X + \epsilon_Y,\ \epsilon\sim N(0, \sigma_{\epsilon_Y}),\\
+Z &=& X + Y + \epsilon_Z,\ \epsilon\sim N(0, \sigma_{\epsilon_Z}).
+\end{eqnarray*}
+
+Ou seja, neste caso, temos que $X$ e $Y$ são independentes e $X\rightarrow Z \leftarrow Y$ na população. Sabemos, neste caso, que o efeito de $X$ em $Y$ é nulo.
+
+\framebreak
+
+Suponha mais uma vez que obtivemos uma amostra de tamanho $n = 1000$ da população.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="80%"}
+
+n <- 1000
+
+x <- rnorm(n)
+
+b0 <- 0
+b1 <- 0
+
+y <- b0 + b1 * x + rnorm(n, sd = 0.5)
+z <- x + y + rnorm(n, sd = 0.2)
+
+plot(y ~ x, pch = 16, col = "steelblue", ylim = c(-1.8, 1.8), xlim = c(-3.2, 3.2))
+
+```
+
+\framebreak
+
+Com os dados observados, mais uma vez ajustamos dois modelos de regressão linear para a variável $Y$:
+
+1. Modelo com apenas a variável $X$ ("não ajustado" para confundidores);
+2. Modelo com as variáveis $X$ e $Z$ ("ajustado").
+
+Deveríamos observar um efeito não-viesado de $X$ em $Y$ no primeiro modelo, e um efeito viesado no segundo modelo (associação induzida pelo condicionamento de $Z$).
+
+\framebreak
+
+\footnotesize
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+
+df <- data.frame(z, x, y)
+
+fit1 <- lm(y ~ x, data = df)
+#summary(fit1)
+fit2 <- lm(y ~ x + z, data = df)
+#summary(fit2)
+
+tab <- sjPlot::tab_model(fit1, fit2,
+                         string.pred = "Variáveis",
+                         show.r2 = FALSE
+                         )
+
+library(sjtable2df)
+
+tab_df <- sjtable2df::mtab2df(
+  mtab = tab,
+  n_models = 2,
+  output = "data.frame"
+)
+
+tab_df <- tab_df[-4,]
+
+library(knitr)
+library(kableExtra)
+
+kbl(tab_df,
+    format = "latex",
+    caption = "Ajuste por colisor",
+    digits = 4,
+    booktabs = T) %>% 
+  add_header_above(c(" ", "Não ajustado" = 3, "Ajustado" = 3)) %>% 
+  kable_styling(latex_options = c("scale_down"))
+
+```
+
+\normalsize
+
+\framebreak
+
+- \alert{O que está acontecendo aqui?}
+- \alert{``Ajustar sempre'' não é o correto?}
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', out.width="80%"}
+
+z.cat <- cut(z,
+             breaks = c(-Inf, quantile(z, probs = c(1 / 4, 2 / 4, 3 / 4, 1))),
+             labels = 1:4)
+
+
+plot(x[z.cat == "1"], y[z.cat == "1"], pch = 16, col = "#d0a040",
+     xlab = "x", ylab = "y", ylim = c(-1.8, 1.8), xlim = c(-3.2, 3.2))
+points(x[z.cat == "2"], y[z.cat == "2"], pch = 16, col = "#40d058")
+points(x[z.cat == "3"], y[z.cat == "3"], pch = 16, col = "#d05840")
+points(x[z.cat == "4"], y[z.cat == "4"], pch = 16, col = "#40b8d0")
+legend("bottomright",
+       pch = 16,
+       col = c("#d0a040", "#40d058", "#d05840", "#40b8d0"),
+       legend = 1:4, title = "Subpopulação", bty = "n")
+
+```
+
+# DAGs: uma introdução mais formal
+
+## Um exemplo
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'terminologia1.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Grafo acíclico dirigido}
+\begin{itemize}
+\item Este é um exemplo de um \structure{grafo acíclico dirigido} (DAG) causal (diagrama causal).
+\item É \structure{dirigido}, pois cada aresta é uma seta de ponta única.
+\item É \structure{causal}, pois as setas representam nossas suposições a respeito da direção da influência causal.
+\item É \structure{acíclico}, pois não contém ciclos: nenhuma variável causa a si mesma.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Terminologia
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'terminologia2.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Pais e filhos}
+\begin{itemize}
+\item $A$ é \structure{pai} (ou \structure{mãe}) de $C$.
+\item $C$ é \structure{filho} (ou \structure{filha}) de $A$.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Terminologia
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'terminologia3.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Ancestrais e descendentes}
+\begin{itemize}
+\item $A$ é um \structure{ancestral} de $D$.
+\item $D$ é \structure{descendente} de $A$.
+\item $A$ também é um \structure{ancestral} de $C$.
+\item $C$ também é um \structure{descendente} de $A$.
+\begin{itemize}
+\item Ou seja, pais são ancestrais, e filhos são descendentes.
+\end{itemize}
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Terminologia
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'terminologia4.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Caminho}
+\begin{itemize}
+\item Este é um \structure{caminho} de $E$ para $B$.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Terminologia
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'terminologia5.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Caminho dirigido}
+\begin{itemize}
+\item Este é um \structure{caminho dirigido} de $A$ para $F$ (todas as setas no caminho apontam ``para frente'').
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Terminologia
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'terminologia6.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Caminho back-door}
+\begin{itemize}
+\item Este é um \structure{caminho porta dos fundos} de $E$ para $D$ (o caminho começa com uma seta \structure{chegando em} $E$).
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Terminologia
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'terminologia7.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Collider}
+\begin{itemize}
+\item $F$ é um \structure{colisor} desde que duas pontas de setas se encontram em $F$.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Terminologia
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'terminologia8.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{alertblock}{Nota}
+\begin{itemize}
+\item Note que $C$ é um colisor no caminho $A\rightarrow C \leftarrow B$.
+\end{itemize}
+\end{alertblock}
+\end{column}
+\end{columns}
+
+## Terminologia
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'terminologia9.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{alertblock}{Nota}
+\begin{itemize}
+\item No entanto, $C$ NÃO É um colisor no caminho $E\leftarrow C \rightarrow D$.
+\item Assim, a definição de um colisor é em relação ao caminho que está sendo considerado.
+\end{itemize}
+\end{alertblock}
+\end{column}
+\end{columns}
+
+## Terminologia
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'terminologia10.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Caminho bloqueado}
+\begin{itemize}
+\item O caminho $E\rightarrow F \leftarrow D$ é \structure{bloqueado} desde que este contenha um colisor ($F$).
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Terminologia
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'terminologia11.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Caminho bloqueado}
+\begin{itemize}
+\item Este caminho também é bloqueado (em $C$).
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Terminologia
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'terminologia12.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Caminho aberto}
+\begin{itemize}
+\item Um caminho que não contém um colisor está \structure{aberto}. Aqui temos um exemplo.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Terminologia
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'terminologia13.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Caminho aberto}
+\begin{itemize}
+\item E outro.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Terminologia
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'terminologia14.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Caminho aberto}
+\begin{itemize}
+\item E outro.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Construindo um DAG
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'constroi1.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Passo 1}
+\begin{itemize}
+\item O primeiro passo na construção de um DAG para um problema particular é escrever a \structure{exposição} e o \structure{desfecho} de interesse, com uma seta da exposição para o desfecho.
+\item Esta seta representa o \structure{efeito causal} que queremos estimar.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Construindo um DAG
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'constroi2.png'))
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Passo 2}
+\begin{itemize}
+\item Se existir qualquer \structure{causa comum} $C$ de $E$ e $D$, devemos colocá-lo no grafo, com setas de $C$ para $E$ e de $C$ para $D$.
+\item Devemos incluir $C$ no grafo, independentemente deste ter sido ou não mensurado em nosso estudo.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Construindo um DAG
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'constroi3.png'))
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Passo 3}
+\begin{itemize}
+\item Continuamos assim, adicionando ao diagrama qualquer variável (observada ou não observada) que é uma \structure{causa comum} de duas ou mais variáveis já existentes no diagrama.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Construindo um DAG
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'constroi4.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Passo 3}
+\begin{itemize}
+\item Continuamos assim, adicionando ao diagrama qualquer variável (observada ou não observada) que é uma \structure{causa comum} de duas ou mais variáveis já existentes no diagrama.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Construindo um DAG
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'constroi5.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Passo 3}
+\begin{itemize}
+\item Se quisermos, podemos também incluir \structure{outras variáveis}, mesmo que eles não sejam causas comuns de outras variáveis no diagrama.
+\item Por exemplo, $F$.
+\item Vamos supor que finalizamos nesse ponto. As variáveis e setas que NÃO estão em nosso grafo representam nossas \structure{suposições causais}.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Construindo um DAG
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'constroi6.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Quais são as nossas suposições?}
+\begin{itemize}
+\item Por exemplo, estamos fazendo a suposição que não há uma causa comum $G$ de $A$ e $B$.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Construindo um DAG
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'constroi7.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Quais são as nossas suposições?}
+\begin{itemize}
+\item E que não há uma causa comum $H$ de $A$ e $D$.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Construindo um DAG
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'constroi8.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Quais são as nossas suposições?}
+\begin{itemize}
+\item E que $A$, $B$ e $C$ representam TODAS as causas comuns de $E$ e $D$; não há uma causa comum adicional $J$.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Construindo um DAG
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'constroi9.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Quais são as nossas suposições?}
+\begin{itemize}
+\item E que não há uma causa comum adicional $K$ de $D$ e $F$.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Construindo um DAG
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'constroi10.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Quais são as nossas suposições?}
+\begin{itemize}
+\item Portanto, cada seta omitida também representa uma suposição.
+\item Por exemplo, estamos assumindo que todo o efeito de $A$ em $D$ atua por meio de $C$ e $E$.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door: existe confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'backdoor1.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Qual o próximo passo?}
+\begin{itemize}
+\item \structure{SE} acreditarmos em nosso diagrama causal, podemos proceder para determinar se a relação $E\rightarrow D$ está \structure{confundida} ou não.
+\item Isto é feito utilizando o \structure{critério porta dos fundos}.
+\item O critério porta dos fundos é aplicado em duas partes:
+\begin{enumerate}
+\item a primeira parte define se existe ou não confundimento.
+\item se existir, a segunda parte determina se é possível controlar o confundimento.
+\end{enumerate}
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door: existe confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'backdoor2.png'))
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Passo 1}
+\begin{itemize}
+\item Primeiro removemos todas as setas \structure{saindo da exposição}.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door: existe confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'backdoor3.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Passo 2}
+\begin{itemize}
+\item Em seguida, procuramos por caminhos abertos a partir da exposição até o desfecho.
+\item Relembrando: um caminho aberto não contém um colisor.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door: existe confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'backdoor4.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Passo 2}
+\begin{itemize}
+\item Este é um caminho aberto?
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door: existe confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'backdoor5.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Passo 2}
+\begin{itemize}
+\item Este é um caminho aberto?
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door: existe confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'backdoor6.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Passo 2}
+\begin{itemize}
+\item Este é um caminho aberto?
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door: existe confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'backdoor7.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Passo 2}
+\begin{itemize}
+\item Este é um caminho aberto?
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door: existe confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'backdoor8.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Existe confundimento?}
+\begin{itemize}
+\item Identificamos três caminhos porta dos fundos abertos de $E$ para $D$. Assim, há confundimento.
+\item Próxima pergunta: podemos usar alguns ou todos de $A$, $B$, $C$, $F$ para controlar esse confundimento?
+\item Existe um conjunto $\mathcal{S}$ de variáveis tal que se estratificarmos (ajustarmos) por elas, podemos concluir que o efeito causal existe no estrato?
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door
+
+A segunda parte do critério da porta dos fundos nos permite determinar, com base em nosso diagrama causal, se um conjunto de covariáveis candidato é ou não suficiente para controlar o confundimento:
+
+\begin{block}{O critério back-door}
+\begin{itemize}
+\item[(i)] Primeiro, o conjunto candidato $\mathcal{S}$ não deve conter \structure{descendentes da exposição}.
+\item[(ii)] Em seguida, removemos todas as setas que saem da exposição.
+\item[(iii)] Então, nós \structure{juntamos com uma linha tracejada} quaisquer duas variáveis que compartilham um filho que esteja ela mesma em $\mathcal{S}$ ou que tenha um descendente em $\mathcal{S}$.
+\item[(iv)] Existe um caminho aberto de E para D que não passa por um membro de $\mathcal{S}$?
+\end{itemize}
+Se NÃO, então $\mathcal{S}$ é \structure{suficiente} para controlar para confundimento.
+\end{block}
+
+## O critério back-door: podemos controlar o confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'controle1.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{O critério back-door: passos (i) e (ii)}
+\begin{itemize}
+\item $C$ é suficiente?
+\item $C$ não é um descendente de $E$, então o passo (i) é satisfeito.
+\item Todas as setas saindo da exposição já foram removidas (passo (ii)).
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door: podemos controlar o confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'controle2.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{passo (iii)}
+\begin{itemize}
+\item \structure{Conectamos} $A$ e $B$ com uma linha tracejada, pois eles compartilham um filho ($C$) que está em nosso conjunto candidato ($C$).
+\item Nenhuma outra variável precisa ser conectada desta forma.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door: podemos controlar o confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'controle3.png'))
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{passo (iv)}
+\begin{itemize}
+\item Agora procuramos por caminhos abertos de $E$ para $D$ e vemos se estes todos passo por $C$.
+\item Este está OK!
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door: podemos controlar o confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'controle4.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{passo (iv)}
+\begin{itemize}
+\item Este também!
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door: podemos controlar o confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'controle5.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{passo (iv)}
+\begin{itemize}
+\item Este também!
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door: podemos controlar o confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'controle6.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{passo (iv)}
+\begin{itemize}
+\item PORÉM, aqui está um caminho aberto de $E$ para $D$ que NÃO passa por $C$
+\item Assim, controlar apenas por $C$ NÃO é suficiente.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door: podemos controlar o confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here('imagens', 'controle7.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Qual é a solução?}
+\begin{itemize}
+\item Devemos controlar adicionalmente para $A$.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door: podemos controlar o confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'controle8.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Qual é a solução?}
+\begin{itemize}
+\item Ou $B$.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## O critério back-door: podemos controlar o confundimento?
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+
+knitr::include_graphics(here('imagens', 'controle9.png'))
+
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Qual é a solução?}
+\begin{itemize}
+\item Ou ambos $A$ e $B$ para controlar para o confundimento.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Bons estudos!
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='90%'}
+
+knitr::include_graphics(here('imagens', 'traffic-jam-causality-loop.jpg'))
+
+```
+
