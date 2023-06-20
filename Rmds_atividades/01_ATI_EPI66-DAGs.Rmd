@@ -1,0 +1,101 @@
+---
+title: "EPI66 - Tópicos de Pesquisa I"
+subtitle: "Uso de DAGs para a identificação de confundidores na pesquisa em saúde"
+fontsize: 10pt
+author: |
+  | Ricardo de Souza Kuchenbecker
+  | Rodrigo Citton P. dos Reis - `citton.padilha@ufrgs.br`
+institute: |
+  | \textsc{Universidade Federal do Rio Grande do Sul}
+  | \textsc{Programa de Pós-Graduação em Epidemiologia}
+date: |
+  | Porto Alegre, 2023
+---
+
+# Atividade 1
+
+## Doença coronariana e níveis de catecolaminas
+
+\begin{columns}[c]
+\column{1.7in}
+\begin{figure}[!h]
+\begin{center}
+\includegraphics[width=0.9\columnwidth]{StatLab2-Front}
+\end{center}
+\end{figure}
+\column{2.9in}
+{\scriptsize
+\begin{itemize}
+\item Com base em experimentos com animais, a função de emergência da medula adrenal foi estudada.
+\item O sistema nervoso simpático é ativado quando um indivíduo é desafiado.
+\item Via o hipotálamo, o estresse psicológico estimula a medula adrenal para liberar as duas catecolaminas, epinefrina (adrenalina) e norepinefrina (noradrenalina) na corrente sanguínea.
+\begin{itemize}
+\item Esta reação rápida de defesa prepara o corpo para a batalha.
+\end{itemize}
+\end{itemize}
+}
+\end{columns}
+\scriptsize
+\begin{itemize}
+\item No entanto, nos dias atuais o sistema simpático é desafiado por ameaças de natureza social ou mental.
+\begin{itemize}
+\item Elevação da pressão arterial e da frequência cardíaca e da liberação de ácidos graxos livres e glicose na corrente sanguínea numa rotina mentalmente estressante, mas sedentária vai ser prejudicial para o organismo, principalmente para o sistema cardiovascular.
+\end{itemize}
+\end{itemize}
+
+## Doença coronariana e níveis de catecolaminas
+
+- Nesta atividade estamos interessados em comparar a incidência de doença coronariana (CHD) em dois grupos de exposição (níveis alto e baixo de catecolaminas).
+    + Esta relação é causal?
+    + Quais as suposições necessárias para o estabelecimento de uma relação causal?
+    + É necessário a análise dos dados para responder as perguntas acima?
+
+## Evans County Heart Disease Study
+
+- Estudo de coorte -- \emph{Evans County Heart Disease Study} -- realizado entre 1960 e 1969.
+- Coorte de 609 indivíduos do sexo masculino, brancos, com idades entre 40 e 76 anos, livres de doença coronariana e residentes no distrito de Evans, Georgia, em 1960.
+- Após sete anos, toda a coorte foi reexaminada e os novos casos de doença coronariana foram identificados.
+- Níveis de catecolaminas é a variável exposição de interesse.
+- Todas as variáveis, com exceção de CHD, foram medidas na linha de base (1960).
+
+## Variáveis
+
+Algumas variáveis sugeridas:
+
+- Ocorrência de doença coronariana, Nível sérico de catecolaminas.
+- Idade, Tabagismo, Alterações do eletrocardiograma, Tipo de ocupação, Estado civil, Colesterol, Pressão arterial sistólica, Pressão arterial diastólica, IMC, \emph{Status} socioeconômico, entre outras
+
+## Construindo um DAG {.allowframebreaks}
+
+\begin{itemize}\setlength{\itemsep}{+3mm}
+\item Faça uma discussão a respeito dos fatores psicossociais associados a liberação de catecolaminas. Quais os efeitos cardiovasculares são esperados destas catecolaminas?
+\item Construa o \structure{diagrama causal (DAG)} para avaliar o efeito da exposição no desfecho de interesse.
+\begin{columns}[c]
+\column{1in}
+\includegraphics[width=0.9\columnwidth]{Porta_dos_Fundos}
+\column{3.6in}
+\begin{itemize}\setlength{\itemsep}{+3mm}
+\item Utilizando o critério \emph{back-door} \structure{(apresente os passos utilizados)} responda:
+\begin{enumerate}\setlength{\itemsep}{+3mm}
+\item Existe confundimento? O que isso implica em termos de suposições de identificação do efeito causal?
+\item Se existe confundimento, é possível controlar este confundimento?
+\item Ainda, se existe confundimento, quais são as variáveis do conjunto suficiente para controle/ajuste?
+\end{enumerate}
+\end{itemize}
+\end{columns}
+\end{itemize}
+
+\framebreak
+
+- A atividade pode ser feita em pequenos grupos.
+- Construa o DAG "no papel".
+- Apresente (5 minutos para cada grupo) na próxima aula o DAG que você construiu.
+
+## Bons estudos!
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='90%'}
+
+knitr::include_graphics(here('imagens', 'caffeine-causality-loop.jpg'))
+
+```
+
