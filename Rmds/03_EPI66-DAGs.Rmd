@@ -1,0 +1,285 @@
+---
+title: "EPI66 - Tópicos de Pesquisa I"
+subtitle: "Uso de DAGs para a identificação de confundidores na pesquisa em saúde"
+fontsize: 10pt
+author: |
+  | Ricardo de Souza Kuchenbecker
+  | Rodrigo Citton P. dos Reis - `citton.padilha@ufrgs.br`
+institute: |
+  | \textsc{Universidade Federal do Rio Grande do Sul}
+  | \textsc{Programa de Pós-Graduação em Epidemiologia}
+date: |
+  | Porto Alegre, 2023
+---
+
+# Relembrando
+
+## Como duas variáveis podem estar associadas?
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='70%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'associa7.png'))
+```
+
+- $X$ e $Y$ serão __associadas na população__ se:
+    + $X$ causa $Y$.
+    + $Y$ causa $X$.
+    + existe uma $Z$ que é causa comum de $X$ e $Y$.
+- $X$ e $Y$ serão __associadas em subpopulações definadas por $Z$__ se $Z$ é um __efeito__ de $X$ e $Y$.
+
+## Como duas variáveis podem estar associadas?
+
+- O que podemos concluir do diagrama abaixo?
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='40%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'exemplo-odag02.png'))
+```
+
+## Como duas variáveis podem estar associadas?
+
+- E neste outro caso? O que podemos concluir?
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='40%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'exemplo-odag02-2.png'))
+```
+
+## Grafos acíclicos dirigidos
+
+\begin{mybox}{grafos acíclicos dirigidos (DAGs)}
+(ou \structure{diagramas causais}), oferecem uma linguagem para especificação de relações (causais) entre as variáveis do quadro conceitual.
+\end{mybox}
+
+\begin{mybox}{Critério back-door}
+(1) verifica a existência de \structure{viés de confusão}; (2) em caso afirmativo, verifica a existência de um conjunto de variáveis \structure{suficiente para o controle} (ajuste) do viés de confusão.
+\end{mybox}
+
+# Ferramentas computacionais para a construção de DAGs
+
+## Um exemplo
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='70%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'exemplo-odag02-3.png'))
+```
+
+- A análise de DAGs pode ser tediosa na prática, e se presta bem à automatização por um programa de computador.
+
+## DAGitty
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='70%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'dagitty-odag02-1.png'))
+```
+
+## DAGitty
+
+- O DAGitty é um ambiente baseado em navegador para criar, editar e analisar modelos causais (DAGs).
+    + O foco está no uso de diagramas causais para minimizar o viés em estudos empíricos em epidemiologia e outras disciplinas.
+
+\begin{columns}
+\begin{column}{.25\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'dagitty-odag02-2.jpg'))
+```
+\end{column}
+\begin{column}{.75\linewidth}
+\begin{itemize}
+\item O DAGitty é desenvolvido e mantido por \structure{Johannes Textor} (Tumor Immmunology Lab and Institute for Computing and Information Sciences, Radboud University Nijmegen).
+\item \url{http://dagitty.net/}
+\end{itemize}
+\end{column}
+\end{columns}
+
+## DAGitty
+
+### Uma visão geral
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='90%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'dagitty1.png'))
+```
+
+## DAGitty
+
+### Uma visão geral
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='90%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'dagitty2.png'))
+```
+
+## DAGitty
+
+### Uma visão geral
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='90%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'dagitty3.png'))
+```
+
+## DAGitty
+
+### Uma visão geral
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='90%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'dagitty4.png'))
+```
+
+## Criando um DAG no DAGitty
+
+- No menu __Model__, clique em __New model__.
+- O DAGitty irá solicitar o nome da variável de __exposição__, e logo em seguida o nome da variável de __desfecho__.
+    + Estas variáveis serão criadas no grafo com o caminho $E \rightarrow D$.
+- Para acrescentar uma nova variável dê um __duplo-clique__ na área do grafo e dê um nome para esta variável.
+- Para especificar uma relação entre duas variáveis, dê um duplo-clique na __variável de origem__ e um duplo-clique na __variável de destino__.
+    + O mesmo procedimento serve para remover uma relação entre duas variáveis já existente.
+- Para remover uma variável do grafo, clique sobre a variável pressionando a __tecla D__.
+- Para renomear uma variável, clique sobre a variável pressionando a __tecla R__.
+- Na dúvida, consulte os menus __How to ...__ e __Help__.
+
+## Criando um DAG no DAGitty
+
+- No menu __Model__ é possível:
+    + exportar o grafo
+    + publicar o grafo
+- Uma vez publicado, o grafo pode ser:
+    + modificado
+    + apagado
+
+# Atividade 2
+
+## Atividade 2
+
+Atividade em pequenos grupos.
+
+1. Utilize o DAGitty para construir o DAG do __"exemplo das catecolaminas"__.
+    - Verifique se as conclusões obtidas concordam com as que você obteve com o critério back-door "feito a mão".
+2. Utilize o DAGitty para construir um DAG do quadro conceitual relacionado à sua questão de pesquisa no mestrado ou doutorado.
+
+## DAGitty encontra o `R` {.allowframebreaks}
+
+- Uma versão do software baseado na web 'DAGitty', disponível em <http://dagitty.net>, para análise de modelos causais estruturais (também conhecidos como gráficos acíclicos direcionados ou DAGs). 
+- Este pacote calcula conjuntos de ajuste de covariáveis para estimar efeitos causais, enumera variáveis instrumentais, deriva __implicações testáveis__ (d-separação), gera modelos equivalentes e inclui um recurso simples para simulação de dados.
+
+\framebreak
+
+```{r, warning=FALSE, message=FALSE}
+
+# Instala o pacote dagitty
+# install.packages("dagitty")
+
+# Carrega o pacote dagitty
+library(dagitty)
+
+# Carrega o DAG a partir do DAGitty
+dag1 <- downloadGraph(x = "dagitty.net/mBYpOXW")
+
+```
+
+\framebreak
+
+```{r, warning=FALSE, message=FALSE, out.width="70%", fig.align='center'}
+
+plot(dag1)
+
+```
+
+\framebreak
+
+```{r, warning=FALSE, message=FALSE, out.width="70%", fig.align='center'}
+
+dag1.bd <- backDoorGraph(dag1)
+plot(dag1.bd)
+
+```
+
+\framebreak
+
+```{r, warning=FALSE, message=FALSE}
+
+print(adjustmentSets(dag1,
+                     effect = "total"))
+
+# impliedConditionalIndependencies(dag1,
+
+#                                  max.results = 2)
+```
+
+## `ggdag`: `dagitty` encontra o `ggplot2` {.allowframebreaks}
+
+- O `ggdag` estende o pacote `dagitty` para funcionar no contexto do _tidyverse_.
+- Ele usa os algoritmos do `dagitty` para analisar DAGs para produzir resultados organizados, que podem ser usados no `ggplot2` e no `ggraph` e manipulados com outras ferramentas do _tidyverse_, como `dplyr`.
+
+\framebreak
+
+```{r, warning=FALSE, message=FALSE}
+
+# Instala o pacote ggdag
+# install.packages("ggdag")
+
+# Carrega o pacote ggdag
+library(ggdag)
+
+# Carrega o DAG a partir do DAGitty
+dag2 <- downloadGraph(x = "dagitty.net/mQLajCg")
+
+```
+
+\framebreak
+
+```{r, warning=FALSE, message=FALSE, out.width="70%", fig.align='center'}
+
+ggdag(dag2)
+
+```
+
+\framebreak
+
+```{r, warning=FALSE, message=FALSE, out.width="70%", fig.align='center'}
+
+ggdag_paths(dag2)
+
+```
+
+\framebreak
+
+```{r, warning=FALSE, message=FALSE, out.width="70%", fig.align='center'}
+
+ggdag_parents(dag2, "D")
+
+```
+
+\framebreak
+
+```{r, warning=FALSE, message=FALSE, out.width="70%", fig.align='center'}
+
+ggdag_ancestors(dag2, "D")
+
+```
+
+\framebreak
+
+```{r, warning=FALSE, message=FALSE, out.width="70%", fig.align='center'}
+
+ggdag_ancestors(dag2, "C1")
+
+```
+
+\framebreak
+
+```{r, warning=FALSE, message=FALSE, out.width="70%", fig.align='center'}
+
+ggdag_children(dag2, "C1")
+
+```
+
+\framebreak
+
+```{r, warning=FALSE, message=FALSE, out.width="70%", fig.align='center'}
+
+ggdag_adjustment_set(dag2)
+
+```
+
+## Bons estudos!
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='90%'}
+
+knitr::include_graphics(here::here('imagens', 'working-causality-loop.jpg'))
+
+```
+
