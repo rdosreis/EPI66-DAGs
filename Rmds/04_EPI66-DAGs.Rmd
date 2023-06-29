@@ -1,0 +1,225 @@
+---
+title: "EPI66 - Tópicos de Pesquisa I"
+subtitle: "Uso de DAGs para a identificação de confundidores na pesquisa em saúde"
+fontsize: 10pt
+author: |
+  | Ricardo de Souza Kuchenbecker
+  | Rodrigo Citton P. dos Reis - `citton.padilha@ufrgs.br`
+institute: |
+  | \textsc{Universidade Federal do Rio Grande do Sul}
+  | \textsc{Programa de Pós-Graduação em Epidemiologia}
+date: |
+  | Porto Alegre, 2023
+---
+
+# Relembrando
+
+## O critério back-door
+
+- Procura ver se a exposição e o desfecho seriam associadas __na ausência de um efeito causal__.
+- Em caso afirmativo, ele verifica se o condicionamento em um determinado conjunto de variáveis __eliminaria__ essa associação.
+    + O condicionamento em uma variável ao longo de um caminho de transmissão de associação remove a associação;
+    + O condicionamento em colisores induz associações.
+- Remover algumas associações espúrias pode criar outras, por isso é necessário cuidado.
+- Existe um __algoritmo preciso__, que pode ser aplicado em configurações arbitrariamente complexas, auxiliado por _softwares_ como o __DAGitty__.
+
+## Exemplo 1
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='40%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'dag-03-ex1.png'))
+```
+
+- Para estimar o efeito causal de __deficiência visual__ no __o óbito__, devemos controlar para __oncocercose__ E ou __sexo__ ou __área de residência__, ou ambos.
+
+## Exemplo 2
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='40%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'dag-03-ex2.png'))
+```
+
+- Para estimar o efeito causal do uso de __suplementos de estrogênio__ no __câncer de endométrio__, devemos controlar por __sangramento uterino__?
+
+## Exemplo 3
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='40%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'dag-03-ex3.png'))
+```
+
+- Para estimar o efeito causal da ingestão de trigo no câncer de pulmão, __devemos controlar por consumo de álcool__?
+
+# Pensamento causal
+
+## Relação com a visão "tradicional" de confundimento
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='40%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'dag-03-ex4.png'))
+```
+
+- Como os DAGs e o critério back-door se relacionam com visões mais tradicionais sobre __confundindo__?
+- O __triângulo__ acima é geralmente desenhado.
+- E diz-se que um confundidor:
+    1. É associado com a exposição.
+    2. É independentemente associado ao desfecho.
+    3. Não está no caminho causal da exposição ao desfecho.
+
+## Relação com a visão "tradicional" de confundimento
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'dag-03-ex5.png'))
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Alguns exemplos simples}
+\begin{itemize}
+\item $C$ \structure{é um confundidor} de acordo com as visões tradicional e DAG.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Relação com a visão "tradicional" de confundimento
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'dag-03-ex6.png'))
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Alguns exemplos simples}
+\begin{itemize}
+\item $C$ \structure{é um confundidor} de acordo com as visões tradicional e DAG.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Relação com a visão "tradicional" de confundimento
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'dag-03-ex7.png'))
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Alguns exemplos simples}
+\begin{itemize}
+\item $C$ \structure{é um confundidor} de acordo com as visões tradicional e DAG.
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Relação com a visão "tradicional" de confundimento
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'dag-03-ex8.png'))
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Alguns exemplos simples}
+\begin{itemize}
+\item $F$ \structure{NÃO é um confundidor} de acordo com a visão \structure{DAG}.
+\begin{itemize}
+\item É um descendente da exposição.
+\item Controlar por $F$ \structure{CRIA viés}.
+\end{itemize}
+\item $F$ \structure{É um confundidor} de acordo com a visão \structure{tradicional}.
+\begin{itemize}
+\item Não está no caminho causal entre exposição e desfecho.
+\item Na prática, alguém ajustaria a análise por este fator?
+\end{itemize}
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Relação com a visão "tradicional" de confundimento
+
+\begin{columns}
+\begin{column}{.5\linewidth}
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='60%', paged.print=FALSE}
+knitr::include_graphics(here::here('imagens', 'dag-03-ex9.png'))
+```
+\end{column}
+\begin{column}{.5\linewidth}
+\begin{block}{Alguns exemplos simples: a estrutura ``M''}
+\begin{itemize}
+\item $C$ \structure{NÃO é um confundidor} de acordo com a visão \structure{DAG}.
+\begin{itemize}
+\item Controlar por $C$ \structure{CRIA viés}.
+\end{itemize}
+\item $C$ \structure{É um confundidor} de acordo com a visão \structure{tradicional}.
+\begin{itemize}
+\item Na prática, muitos pesquisadores ajustariam a análise por este fator.
+\end{itemize}
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+
+## Relação com a visão "tradicional" de confundimento
+
+Em resumo, com exceção da __estrutura "M"__ e estruturas relacionadas, as visões __tradicional__ e __DAG__ concordam na maioria das situações em que __um confundidor__ está sendo considerado.
+
+## Relação com a visão "tradicional" de confundimento
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, out.width="70%", fig.align='center'}
+
+# Carrega o pacote dagitty
+library(dagitty)
+
+# Carrega o DAG a partir do DAGitty
+dag2 <- downloadGraph(x = "dagitty.net/mSTdaXn")
+plot(dag2)
+```
+
+- Na prática, devemos ter __mais de um confundidor__.
+
+## Desfechos potenciais vs. DAGs {.allowframebreaks}
+
+::: {.block}
+
+### Imbens and Rubin (2015):
+
+Pearl’s work is interesting, and many researchers find his arguments that path diagrams are a natural and convenient way to express assumptions about causal structures appealing. In our own work, perhaps influenced by the type of examples arising in social and medical sciences, we have not found this approach to aid drawing of causal inferences.
+
+:::
+
+::: {.block}
+
+### Pearl’s blog post:
+
+So, what is it about epidemiologists that drives them to seek the light of new tools, while economists seek comfort in partial blindness, while missing out on the causal revolution? Can economists do in their heads what epidemiologists observe in their graphs? Can they, for instance, identify the testable implications of their own assumptions? Can they decide whether the IV assumptions are satisfied in their own models of reality? Of course they can’t; such decisions are intractable to the graph-less mind.
+
+:::
+
+## Tendência ao sincretismo
+
+- Desfechos potenciais são úteis quando se pensa em experimentos com mecanismos de atribuição de tratamento, quase-experimentos.
+- DAGs são úteis quando se pensa em toda a estrutura causal, relações causais complexas, mecanismos causais.
+
+## Métodos de análise
+
+- Suponha que, aplicando o critério _back-door_, nosso diagrama causal nos diga que o conjunto $Z=\{Z_1,Z_2,\ldots,Z_p\}$ __(sexo, idade, gravidade da dor, uso de álcool, ...)__ é suficiente para controlar para confusão.
+- __Como analisamos__ os dados para estimarmos o efeito causal médio?
+    + Estratificação;
+    + Ajuste por covariável na análise de regressão;
+    + Méotodos de pareamento;
+    + Escore de propensão.
+- E para além do efeito causal médio (total)?
+    + Explicando as causas das causas: análise de mediação e análise de interação (ver Vanderweele, 2015)^[__VanderWeele, Tyler J.__ _Explanation in Causal Inference: Methods for Mediation and Interaction_. New York, NY: Oxford University Press, 2015.].
+
+## Muito obrigado!
+
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='90%'}
+
+knitr::include_graphics(here::here('imagens', 'electoral-causality-loop.jpg'))
+
+```
+
